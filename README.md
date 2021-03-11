@@ -1,2 +1,2 @@
 # DProgramming
-My D codes.
+Numerical D codes by Yinchieh Lai.
