@@ -1,5 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
+ * Basic array and Idx tools.
  *
  * Copyright:   Copyright (C) 2021 by Yinchieh Lai
  * Author:     Yinchieh Lai
@@ -20,23 +20,6 @@ public import std.datetime.stopwatch;
 alias size_t ST;
 
 
-version(stdcmath)
-{
-public import core.stdc.math;
-public import core.stdc.complex;
-alias cdouble Cdouble;
-alias creal Creal;
-alias cfloat Cfloat;
-alias core.stdc.complex.cabs cabs;
-alias core.stdc.complex.carg carg;
-
-pragma(inline) Cdouble comp(double x, double y=0.0)
-{
-  return x+1.0i*y;
-}
-}
-else
-{
 public import std.math;
 public import std.complex;
 alias Complex!float Cfloat;
@@ -45,52 +28,9 @@ alias Complex!real Creal;
 alias complex comp;
 alias std.complex.abs cabs;
 alias std.complex.arg carg;
-}
 
 import std.variant : Algebraic, VariantN, visit;
 alias Algebraic Atype; 
-
-template isAlgebraic(Type)
-{
-    static if (is(Type == VariantN!T, T...))
-        enum isAlgebraic = T.length >= 2;
-    else
-        enum isAlgebraic = false;
-}
-
-
-template dispatch(alias Fn)
-{
-    void dispatch(A)(A arg)
-    if (A.AllowedTypes.length > 0)
-    {
-        static foreach (T; A.AllowedTypes)
-        {
-            if (typeid(T) == arg.type) {
-                Fn(arg.get!T);
-            }
-        }
-    }
-}
-
-/+ example:
-import addon.array;
-import addon.tool;
-
-void main()
-{
-  alias Atype!(Cdouble, int, double) Mytype;
-  auto v=vec!Mytype(1, comp(2.), 3.);
-  pr(v);
-}
-+/
-
-/*
-auto shrun(string s)
-{
-    return executeShell(s);
-}
-*/
 
 int sys_print(string s)
 {
@@ -106,8 +46,7 @@ int sys(string s)
     return ls.status;
 }
 
-
-/***some type templates******/
+/*** templates for array******/
 
 template ArrayBaseType(U)
 {
@@ -185,9 +124,7 @@ template DCType(T, U)
         alias double DCType;
 }
 
-
-
-/******************************************/
+/*********function tools for array************/
 
 U[] newvec(U)(size_t dim0, U init = U.init)
 {
@@ -550,114 +487,6 @@ U dot(U)(U[] v1, U[] v2)
     return result;
 }
 
-void pr1(T)(T t)
-{
-    static if (is(T == Cdouble) || is(T == Creal))
-        write(t, " ");
-    else static if (is(T == struct) || is(T == class))
-        t.print;
-    else static if (isAlgebraic!T)
-        t.dispatch!((x){pr(x);});
-    else
-        write(t, " ");
-}
-
-void pr(T...)(T t)
-{
-    foreach (i, s; t)
-    {
-        pr1(s);
-    }
-    writeln("");
-}
-
-void pr_obj(T)(T pa)
-{
-  string[T.tupleof.length] fieldnames; 
-  static foreach (i, s; T.tupleof) fieldnames[i]=s.stringof; 
-  foreach(i,ref s; pa.tupleof) pr(fieldnames[i]~" = ",s);
-}
-
-template Print()
-{
-  void print()
-  {
-    string[this.tupleof.length] fieldnames; 
-    static foreach (i, s; typeof(this).tupleof) fieldnames[i]=s.stringof;
-    pr("struct");
-    pr("{");
-    foreach(i,ref s; this.tupleof) pr(fieldnames[i]~" = ",s);
-    pr("}");
-  }
-}
-
-
-/******************file input/output****************/
-void arraysave(V)(string fname, V data)
-{
-
-    alias ArrayBaseType!(V) U;
-    enum ndim = ArrayRank!(V);
-    auto fp = File(fname, "w");
-    size_t magic;
-    static if (is(U == int))
-        magic = 0;
-    else static if (is(U == long))
-        magic = 1;
-    else static if (is(U == double))
-        magic = 2;
-    else static if (is(U == Cdouble))
-        magic = 3;
-    else static if (is(U == real))
-        magic = 4;
-    else static if (is(U == Creal) || is(U == creal))
-        magic = 5;
-    else
-        assert(false);
-    fp.rawWrite([magic]);
-    fp.rawWrite([ndim]);
-    fp.rawWrite(dims(data));
-    fp.rawWrite(srg(data));
-    fp.close();
-}
-
-V arrayread(V)(string fname)
-{
-    alias ArrayBaseType!(V) U;
-    enum Ndim = ArrayRank!(V);
-    auto fp = File(fname, "r");
-    size_t[1] itemp;
-    fp.rawRead(itemp);
-    size_t magic = itemp[0];
-    static if (is(U == int))
-        assert(magic == 0);
-    else static if (is(U == long))
-        assert(magic == 1);
-    else static if (is(U == double))
-        assert(magic == 2);
-    else static if (is(U == Cdouble))
-        assert(magic == 3);
-    else static if (is(U == real))
-        assert(magic == 4);
-    else static if (is(U == Creal) || is(U == creal))
-        assert(magic == 5);
-    else
-        assert(false);
-    fp.rawRead(itemp);
-    size_t ndim = itemp[0];
-    assert(ndim == Ndim);
-    size_t[] dim;
-    dim.length = ndim;
-    fp.rawRead(dim);
-    NTypeTuple!(size_t, Ndim) dims;
-    foreach (i, ref s; dims)
-        s = to!(size_t)(dim[i]);
-    auto m = newarray!U(dims);
-    fp.rawRead(srg(m));
-    fp.close();
-    return m;
-}
-
 T min(T)(T a, T b)
 {
     return (a > b) ? b : a;
@@ -768,7 +597,117 @@ T[] vec(T, U...)(U u)
  return r; 
 }
 
-/************************************************/
+
+/****************generic print function****************************/
+
+void pr1(T)(T t)
+{
+    static if (is(T == Cdouble) || is(T == Creal))
+        write(t, " ");
+    else static if (is(T == struct) || is(T == class))
+        t.print;
+    else static if (isAlgebraic!T)
+        t.dispatch!((x){pr(x);});
+    else
+        write(t, " ");
+}
+
+void pr(T...)(T t)
+{
+    foreach (i, s; t)
+    {
+        pr1(s);
+    }
+    writeln("");
+}
+
+void pr_obj(T)(T pa)
+{
+  string[T.tupleof.length] fieldnames; 
+  static foreach (i, s; T.tupleof) fieldnames[i]=s.stringof; 
+  foreach(i,ref s; pa.tupleof) pr(fieldnames[i]~" = ",s);
+}
+
+template Print()
+{
+  void print()
+  {
+    string[this.tupleof.length] fieldnames; 
+    static foreach (i, s; typeof(this).tupleof) fieldnames[i]=s.stringof;
+    pr("struct");
+    pr("{");
+    foreach(i,ref s; this.tupleof) pr(fieldnames[i]~" = ",s);
+    pr("}");
+  }
+}
+
+/******************file input/output****************/
+void arraysave(V)(string fname, V data)
+{
+
+    alias ArrayBaseType!(V) U;
+    enum ndim = ArrayRank!(V);
+    auto fp = File(fname, "w");
+    size_t magic;
+    static if (is(U == int))
+        magic = 0;
+    else static if (is(U == long))
+        magic = 1;
+    else static if (is(U == double))
+        magic = 2;
+    else static if (is(U == Cdouble))
+        magic = 3;
+    else static if (is(U == real))
+        magic = 4;
+    else static if (is(U == Creal) || is(U == creal))
+        magic = 5;
+    else
+        assert(false);
+    fp.rawWrite([magic]);
+    fp.rawWrite([ndim]);
+    fp.rawWrite(dims(data));
+    fp.rawWrite(srg(data));
+    fp.close();
+}
+
+V arrayread(V)(string fname)
+{
+    alias ArrayBaseType!(V) U;
+    enum Ndim = ArrayRank!(V);
+    auto fp = File(fname, "r");
+    size_t[1] itemp;
+    fp.rawRead(itemp);
+    size_t magic = itemp[0];
+    static if (is(U == int))
+        assert(magic == 0);
+    else static if (is(U == long))
+        assert(magic == 1);
+    else static if (is(U == double))
+        assert(magic == 2);
+    else static if (is(U == Cdouble))
+        assert(magic == 3);
+    else static if (is(U == real))
+        assert(magic == 4);
+    else static if (is(U == Creal) || is(U == creal))
+        assert(magic == 5);
+    else
+        assert(false);
+    fp.rawRead(itemp);
+    size_t ndim = itemp[0];
+    assert(ndim == Ndim);
+    size_t[] dim;
+    dim.length = ndim;
+    fp.rawRead(dim);
+    NTypeTuple!(size_t, Ndim) dims;
+    foreach (i, ref s; dims)
+        s = to!(size_t)(dim[i]);
+    auto m = newarray!U(dims);
+    fp.rawRead(srg(m));
+    fp.close();
+    return m;
+}
+
+/***********template for Idx*******************/
 
 template isIdxType(T)
 {
@@ -800,7 +739,10 @@ struct SliceRange
     size_t ie;
 }
 
-enum _maxdim = 4;
+
+/***********Idx struct *******************/
+
+enum _maxdim = 4; 
 
 final struct Idx(T)
 {
@@ -1068,7 +1010,7 @@ final struct Idx(T)
 
 }
 
-/***********functions*************************/
+/***********function tools for Idx*************************/
 
 alias Idx!(double) DIdx;
 alias Idx!(Cdouble) CIdx;
@@ -1408,64 +1350,6 @@ void idxprint(T)(Idx!(T) m)
         assert(false, "ndim error");
 }
 
-/******************file input/output****************/
-
-void idxsave(U)(string fname, Idx!(U) data)
-{
-    assert(data.contiguousp(), "idx not contiguous.");
-    auto fp = File(fname, "w");
-    int magic;
-    static if (is(U == int))
-        magic = 0;
-    else static if (is(U == long))
-        magic = 1;
-    else static if (is(U == double))
-        magic = 2;
-    else static if (is(U == Cdouble))
-        magic = 3;
-    else static if (is(U == real))
-        magic = 4;
-    else static if (is(U == Creal) || is(U == creal))
-        magic = 5;
-    else
-        assert(false);
-    fp.rawWrite([magic]);
-    fp.rawWrite([to!int(data.ndim)]);
-    fp.rawWrite(to!(int[])(data.dim[0 .. data.ndim]));
-    fp.rawWrite(data.srg);
-    fp.close();
-}
-
-Idx!(U) idxread(U)(string fname)
-{
-    auto fp = File(fname, "r");
-    int[1] itemp;
-    fp.rawRead(itemp);
-    int magic = itemp[0];
-    static if (is(U == int))
-        assert(magic == 0);
-    else static if (is(U == long))
-        assert(magic == 1);
-    else static if (is(U == double))
-        assert(magic == 2);
-    else static if (is(U == Cdouble))
-        assert(magic == 3);
-    else static if (is(U == real))
-        assert(magic == 4);
-    else static if (is(U == Creal) || is(U == creal))
-        assert(magic == 5);
-    else
-        assert(false);
-    fp.rawRead(itemp);
-    size_t ndim = to!(size_t)(itemp[0]);
-    int[] dim;
-    dim.length = ndim;
-    fp.rawRead(dim);
-    auto m = newidx!U(to!(size_t[])(dim));
-    fp.rawRead(m.srg);
-    fp.close();
-    return m;
-}
 
 DIdx re(CIdx m)
 {
@@ -1553,6 +1437,7 @@ Idx!(T) transpose(T)(Idx!(T) m0)
   else if (m0.ndim ==1) return m0;
   else assert(false, "not implemented");
 }
+
 
 /******************************/
 template declare_incr(u...)
@@ -1679,7 +1564,66 @@ double inner(U, V)(Idx!(U) v1, Idx!(V) v2)
     }
 }
 
-/******************************/
+/******************Idx file input/output****************/
+
+void idxsave(U)(string fname, Idx!(U) data)
+{
+    assert(data.contiguousp(), "idx not contiguous.");
+    auto fp = File(fname, "w");
+    int magic;
+    static if (is(U == int))
+        magic = 0;
+    else static if (is(U == long))
+        magic = 1;
+    else static if (is(U == double))
+        magic = 2;
+    else static if (is(U == Cdouble))
+        magic = 3;
+    else static if (is(U == real))
+        magic = 4;
+    else static if (is(U == Creal) || is(U == creal))
+        magic = 5;
+    else
+        assert(false);
+    fp.rawWrite([magic]);
+    fp.rawWrite([to!int(data.ndim)]);
+    fp.rawWrite(to!(int[])(data.dim[0 .. data.ndim]));
+    fp.rawWrite(data.srg);
+    fp.close();
+}
+
+Idx!(U) idxread(U)(string fname)
+{
+    auto fp = File(fname, "r");
+    int[1] itemp;
+    fp.rawRead(itemp);
+    int magic = itemp[0];
+    static if (is(U == int))
+        assert(magic == 0);
+    else static if (is(U == long))
+        assert(magic == 1);
+    else static if (is(U == double))
+        assert(magic == 2);
+    else static if (is(U == Cdouble))
+        assert(magic == 3);
+    else static if (is(U == real))
+        assert(magic == 4);
+    else static if (is(U == Creal) || is(U == creal))
+        assert(magic == 5);
+    else
+        assert(false);
+    fp.rawRead(itemp);
+    size_t ndim = to!(size_t)(itemp[0]);
+    int[] dim;
+    dim.length = ndim;
+    fp.rawRead(dim);
+    auto m = newidx!U(to!(size_t[])(dim));
+    fp.rawRead(m.srg);
+    fp.close();
+    return m;
+}
+
+/**********grid points in polygon********************/
 pragma(inline) long unitstep(double x)
 {
   return (x<0)?0:1;
@@ -1747,4 +1691,32 @@ void setPoly(T)(double[][] poly, Idx!T m, T val, double[] x, double[] y)
   w.destroy();
 }
 
+/*********templaye for Algebraic type ***************************/
 
+template isAlgebraic(Type)
+{
+    static if (is(Type == VariantN!T, T...))
+        enum isAlgebraic = T.length >= 2;
+    else
+        enum isAlgebraic = false;
+}
+
+template dispatch(alias Fn)
+{
+    void dispatch(A)(A arg)
+    if (A.AllowedTypes.length > 0)
+    {
+        static foreach (T; A.AllowedTypes)
+        {
+            if (typeid(T) == arg.type) {
+                Fn(arg.get!T);
+            }
+        }
+    }
+}
+
+/+ example:
+  alias Atype!(Cdouble, int, double) Mytype;
+  auto v=vec!Mytype(1, comp(2.), 3.);
+  pr(v);
++/

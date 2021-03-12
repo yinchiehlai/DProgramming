@@ -1,5 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
+ * Solution of linear matrix equations by the umfpack library.
  *
  * Copyright:   Copyright (C) 2021 by Yinchieh Lai
  * Author:     Yinchieh Lai
@@ -15,36 +15,7 @@ pragma(lib, "umfpack");
 //  version(Posix) pragma(link, "amd");
 //  pragma(link, "blas");
 
-double[] cr_copyto_ri(Cdouble[] cr, double[] ri = null)
-{
-    size_t n = cr.length;
-    if (ri is null)
-        ri.length = n;
-    foreach (i, s; cr)
-    {
-        ri[i] = s.re;
-        ri[i + n] = s.im;
-    }
-    return ri;
-}
-
-Cdouble[] ri_copyto_cr(double[] ri, Cdouble[] cr)
-{
-    size_t n = ri.length / 2;
-    if (cr is null)
-        cr.length = n;
-    size_t j = 0, k = 1;
-    double[] cvout = (cast(double*) cr.ptr)[0 .. 2 * n];
-    for (size_t i = 0; i < n; ++i)
-    {
-        cvout[j] = ri[i];
-        cvout[k] = ri[i + n];
-        j += 2;
-        k += 2;
-    }
-    return cr;
-}
-
+/***main user functions****************/
 T[] linearsolve(T)(Spm!(T) m, T[] b, T[] x = null)
 {
     static if (is(T : double))
@@ -86,6 +57,31 @@ double[] dlinearsolve(SpmCompact!(double) m, double[] bx, double[] x = null)
     return x;
 }
 
+double[] clinearsolve(CSpmCompact_ri m, double[] b, double[] x = null)
+{
+    int n = to!int(b.length / 2);
+    void* Symbolic, Numeric;
+    if (x is null)
+        x = newvec(2 * n, double.init);
+    int[] Ap = m.count;
+    int[] Ai = m.id;
+    double[] Ax = m.rdata;
+    double[] Az = m.idata;
+    double[] xr = x[0 .. n];
+    double[] xi = x[n .. 2 * n];
+    double[] br = b[0 .. n];
+    double[] bi = b[n .. 2 * n];
+    umfpack_zi_symbolic(n, n, Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, &Symbolic, null, null);
+    umfpack_zi_numeric(Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, Symbolic, &Numeric, null, null);
+    umfpack_zi_free_symbolic(&Symbolic);
+    /* solve system */
+    umfpack_zi_solve(UMFPACK_A, Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, xr.ptr, xi.ptr,
+            br.ptr, bi.ptr, Numeric, null, null);
+    umfpack_zi_free_numeric(&Numeric);
+    return x;
+}
+
+/***utility functions****************/
 double[] linearsolve_store_symbolic(SpmCompact!(double) m, out void* Symbolic,
         double[] bx, double[] x = null)
 {
@@ -153,29 +149,36 @@ double[] linearsolve_with_symbolic(SpmCompact!(double) m, void* Symbolic,
     return x;
 }
 
-double[] clinearsolve(CSpmCompact_ri m, double[] b, double[] x = null)
+double[] cr_copyto_ri(Cdouble[] cr, double[] ri = null)
 {
-    int n = to!int(b.length / 2);
-    void* Symbolic, Numeric;
-    if (x is null)
-        x = newvec(2 * n, double.init);
-    int[] Ap = m.count;
-    int[] Ai = m.id;
-    double[] Ax = m.rdata;
-    double[] Az = m.idata;
-    double[] xr = x[0 .. n];
-    double[] xi = x[n .. 2 * n];
-    double[] br = b[0 .. n];
-    double[] bi = b[n .. 2 * n];
-    umfpack_zi_symbolic(n, n, Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, &Symbolic, null, null);
-    umfpack_zi_numeric(Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, Symbolic, &Numeric, null, null);
-    umfpack_zi_free_symbolic(&Symbolic);
-    /* solve system */
-    umfpack_zi_solve(UMFPACK_A, Ap.ptr, Ai.ptr, Ax.ptr, Az.ptr, xr.ptr, xi.ptr,
-            br.ptr, bi.ptr, Numeric, null, null);
-    umfpack_zi_free_numeric(&Numeric);
-    return x;
+    size_t n = cr.length;
+    if (ri is null)
+        ri.length = n;
+    foreach (i, s; cr)
+    {
+        ri[i] = s.re;
+        ri[i + n] = s.im;
+    }
+    return ri;
 }
+
+Cdouble[] ri_copyto_cr(double[] ri, Cdouble[] cr)
+{
+    size_t n = ri.length / 2;
+    if (cr is null)
+        cr.length = n;
+    size_t j = 0, k = 1;
+    double[] cvout = (cast(double*) cr.ptr)[0 .. 2 * n];
+    for (size_t i = 0; i < n; ++i)
+    {
+        cvout[j] = ri[i];
+        cvout[k] = ri[i + n];
+        j += 2;
+        k += 2;
+    }
+    return cr;
+}
+
 
 double[] linearsolve_store_symbolic(CSpmCompact_ri m, out void* Symbolic,
         double[] b, double[] x = null)

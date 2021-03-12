@@ -1,5 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
+ * Matrix eigensolution based on Arpack with Umfpack.
  *
  * Copyright:   Copyright (C) 2021 by Yinchieh Lai
  * Author:     Yinchieh Lai
@@ -39,6 +39,7 @@ extern (C)
             Cdouble* workl, int* lworkl, double* rwork, int* ierr);
 }
 
+/*********for double symmetric matrix*********************************/
 double[] eigenvalues_ds(Spm!(double) M0, int nev, double shift, double[] Evals = null)
 {
     auto M = M0.dup;
@@ -205,6 +206,7 @@ double[] eigenvalues_ds(Spm!(double) M0, int nev, double shift, double[] Evals =
     return Evals;
 }
 
+/*********for complex matrix*********************************/
 Cdouble[] eigenvalues(Spm!(Cdouble) M0, int nev, Cdouble shift, Cdouble[] Evals = null)
 {
     auto M = M0.dup;
@@ -403,6 +405,7 @@ Cdouble[] eigenvalues(Spm!(Cdouble) M0, int nev, Cdouble shift, Cdouble[] Evals 
     return Evals;
 }
 
+/*********for double symmetric matrix*********************************/
 Tuple!(double[], "eigenvalues", double[][], "eigenvectors") eigensystem_ds(
         Spm!(double) M0, int nev, double shift, double[] Evals = null, double[][] Evecs = null)
 {
@@ -581,6 +584,8 @@ Tuple!(double[], "eigenvalues", double[][], "eigenvectors") eigensystem_ds(
     return result;
 }
 
+
+/*********for complex matrix*********************************/
 Tuple!(Cdouble[], "eigenvalues", Cdouble[][], "eigenvectors") eigensystem(Spm!(
         Cdouble) M0, int nev, Cdouble shift, Cdouble[] Evals = null, Cdouble[][] Evecs = null)
 {

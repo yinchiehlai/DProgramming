@@ -1,14 +1,5 @@
-/* Converted to D from dislin.h by htod */
+/* Binding for the DISLIN library (https://www.mps.mpg.de/dislin). */
 module addon.dislin;
-/****************************************************************/
-/**                        DISLIN.H                            **/
-/**                                                            **/
-/** INCLUDE file for DISLIN C routines.                        **/
-/**                                                            **/
-/** Date     : 15.09.2006                                      **/
-/** Functions: 622                                             **/
-/** Version  : 9.1                                             **/
-/****************************************************************/
 
 extern (C):
 void abs3pt(double x, double y, double z, double* xp, double* yp);

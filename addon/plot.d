@@ -1,5 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
+ * Basic plotting tools based on the DISLIN library (https://www.mps.mpg.de/dislin).
  *
  * Copyright:   Copyright (C) 2021 by Yinchieh Lai
  * Author:     Yinchieh Lai

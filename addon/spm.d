@@ -1,5 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
+ * Basic sparse matrix tools.
  *
  * Copyright:   Copyright (C) 2021 by Yinchieh Lai
  * Author:     Yinchieh Lai
@@ -58,6 +58,8 @@ void spm_scan(alias f, T)(Spm!T m)
     }
 }
 
+
+/********column majored Sparse matrix*********************/
 struct Spm(T)
 {
     size_t[2] dim;
@@ -383,6 +385,7 @@ CSpm cspm(U : size_t)(U[] dim, size_t bufsize)
     return newspm!(Cdouble)(dim, bufsize);
 }
 
+/********column majored compressed sparse matrix with real and imag in two double arrays*********************/
 struct CSpmCompact_ri
 {
     int[] count;
@@ -401,6 +404,8 @@ struct CSpmCompact_ri
     }
 }
 
+
+/********column majored compressed sparse matrix in complex*********************/
 struct SpmCompact(T)
 {
     int[] count;
@@ -420,4 +425,3 @@ struct SpmCompact(T)
 alias SpmCompact!double DSpmCompact;
 alias SpmCompact!Cdouble CSpmCompact;
 
-/////////////////////////////////////////

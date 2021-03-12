@@ -1,9 +1,5 @@
 /**
- * Basic vector, matrix, idx tools.
- *
- * Copyright:   Copyright (C) 2021 by Yinchieh Lai
- * Author:     Yinchieh Lai
- * License:     $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+ * Binding for FFTW3 (http://www.fftw.org/) .
  */
 
 module addon.fftw;
