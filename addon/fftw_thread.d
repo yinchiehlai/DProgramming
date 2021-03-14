@@ -6,6 +6,7 @@ module addon.fftw_thread;
 import addon.tool;
 
 pragma(lib, "fftw3_threads");
+pragma(lib, "fftw3");
 
 extern (C)
 {
@@ -14,7 +15,7 @@ extern (C)
             int FFTW_FORWARD, int ffttype);
     void fftw_execute(void* p1);
     void fftw_destroy_plan(void* p1);
-    void fftw_init_threads();
+    int fftw_init_threads();
     void fftw_plan_with_nthreads(int n);
     void fftw_cleanup_threads();
 }
@@ -24,33 +25,24 @@ const size_t FFTW_ESTIMATE = (1U << 6);
 const int FFTW_FORWARD = -1;
 const int FFTW_BACKWARD = +1;
 
-void fft(Cdouble[] vin, Cdouble[] vout)
-{
-    void* p1 = fftw_plan_dft_1d(cast(int) vin.length, vin.ptr, vout.ptr,
-            FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p1);
-    fftw_end(p1);
-}
-
 void* fftw_plan(Cdouble[] vin, Cdouble[] vout)
 {
     return fftw_plan_dft_1d(cast(int) vin.length, vin.ptr, vout.ptr, FFTW_FORWARD, FFTW_ESTIMATE);
 }
 
-void ifft(Cdouble[] vin, Cdouble[] vout)
-{
-    void* p1 = fftw_plan_dft_1d(cast(int) vin.length, vin.ptr, vout.ptr,
-            FFTW_BACKWARD, FFTW_ESTIMATE);
-    fftw_execute(p1);
-    fftw_end(p1);
-}
 
 void* ifftw_plan(Cdouble[] vin, Cdouble[] vout)
 {
     return fftw_plan_dft_1d(cast(int) vin.length, vin.ptr, vout.ptr, FFTW_BACKWARD, FFTW_ESTIMATE);
 }
 
-void fftw_end(void* p1)
+void* fftw_2d_plan(CIdx vin, CIdx vout)
 {
-    fftw_destroy_plan(p1);
+    return fftw_plan_dft_2d(cast(int) vin.dim[0], cast(int) vin.dim[1], vin.srg.ptr, vout.srg.ptr, FFTW_FORWARD, FFTW_ESTIMATE);
+}
+
+
+void* ifftw_2d_plan(CIdx vin, CIdx vout)
+{
+    return fftw_plan_dft_2d(cast(int) vin.dim[0], cast(int) vin.dim[1], vin.srg.ptr, vout.srg.ptr, FFTW_BACKWARD, FFTW_ESTIMATE);
 }
