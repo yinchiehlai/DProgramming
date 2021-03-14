@@ -1,7 +1,7 @@
 /**
  * Matrix eigensolution based on Arpack with Umfpack.
  *
- * Copyright:   Copyright (C) 2021 by Yinchieh Lai
+ * Copyright:   Copyright (C) 2021 by Yinchieh Lai, All Rights Reserved
  * Author:     Yinchieh Lai
  * License:     $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  */
