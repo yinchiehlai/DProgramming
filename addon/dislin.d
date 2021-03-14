@@ -1,4 +1,4 @@
-/* Binding for the DISLIN library (https://www.mps.mpg.de/dislin). */
+/* Binding for the DISLIN plot library (https://www.mps.mpg.de/dislin). */
 module addon.dislin;
 
 extern (C):

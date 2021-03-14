@@ -1,5 +1,5 @@
 /**
- * Binding for multi-thread FFTW3  (http://www.fftw.org/) .
+ * Simple binding for multi-thread FFTW3  (http://www.fftw.org/) .
  */
 
 module addon.fftw_thread;

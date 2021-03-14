@@ -1,5 +1,5 @@
 /**
- * Binding for FFTW3 (http://www.fftw.org/) .
+ * Simple binding for FFTW3 (http://www.fftw.org/) .
  */
 
 module addon.fftw;
